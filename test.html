@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MQTT Presigned URL</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/4.3.7/mqtt.min.js"></script>
+</head>
+<body>
+  <h1>MQTT WebSocket Connection</h1>
+  <div>
+    <label for="topic">Topic:</label>
+    <input type="text" id="topic" placeholder="Enter topic to subscribe" value="test/topic">
+    <button id="subscribe">Subscribe</button>
+  </div>
+  <div>
+    <label for="message">Message:</label>
+    <input type="text" id="message" placeholder="Enter message to publish">
+    <button id="publish">Publish</button>
+  </div>
+  <div id="log" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;">
+    <h3>Logs:</h3>
+    <pre id="output"></pre>
+  </div>
+
+  <script>
+ 
+
+    // Presigned URL từ AWS IoT
+    const presignedUrl = "Your presigned URL";
+
+    // Tạo MQTT client
+    const clientId = `mqttjs_${Math.random().toString(16).substr(2, 8)}`;
+    const client = mqtt.connect(presignedUrl, {
+      clientId,
+      clean: true,
+      reconnectPeriod: 6000,
+      keepalive: 60,
+    });
+
+    // DOM elements
+    const logOutput = document.getElementById('output');
+    const topicInput = document.getElementById('topic');
+    const messageInput = document.getElementById('message');
+    const subscribeButton = document.getElementById('subscribe');
+    const publishButton = document.getElementById('publish');
+
+    // Log function
+    const log = (message) => {
+      logOutput.textContent += `${message}\n`;
+      logOutput.scrollTop = logOutput.scrollHeight;
+    };
+
+    // MQTT client events
+    client.on('connect', () => {
+      log(`Connected to MQTT broker! Client ID: ${clientId}`);
+    });
+
+    client.on('error', (err) => {
+      console.log(err);
+    });
+
+    client.on('message', (topic, message) => {
+      log(`Message received from topic "${topic}": ${message.toString()}`);
+    });
+
+    // Subscribe button click
+    subscribeButton.addEventListener('click', () => {
+      const topic = topicInput.value.trim();
+      if (topic) {
+        client.subscribe(topic, (err) => {
+          if (!err) {
+            log(`Subscribed to topic: ${topic}`);
+          } else {
+            log(`Error subscribing to topic: ${err.message}`);
+          }
+        });
+      } else {
+        log('Please enter a topic to subscribe.');
+      }
+    });
+
+    // Publish button click
+    publishButton.addEventListener('click', () => {
+      const topic = topicInput.value.trim();
+      const message = messageInput.value.trim();
+      if (topic && message) {
+        client.publish(topic, message, (err) => {
+          if (!err) {
+            log(`Published message to topic "${topic}": ${message}`);
+          } else {
+            log(`Error publishing message: ${err.message}`);
+          }
+        });
+      } else {
+        log('Please enter both topic and message.');
+      }
+    });
+  </script>
+</body>
+</html>
